@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/rusilkoirala/duelle/internal/handler"
 )
 
 func main() {
@@ -24,7 +26,7 @@ func main() {
 	mux.Handle("/", staticHandler)
 
 	// health check point
-	mux.HandleFunc("/health", healthCheckHandler)
+	mux.HandleFunc("GET /health", handler.Health)
 
 	addr := fmt.Sprintf(":%s", port)
 
@@ -33,8 +35,4 @@ func main() {
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatal("Server failed to start: %v", err)
 	}
-}
-
-func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-
 }
