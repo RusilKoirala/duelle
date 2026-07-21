@@ -15,6 +15,6 @@ func Load() *Config {
 
 	return &Config{
 		Port:      port,
-		StaticDir: "../../../../client",
+		StaticDir: "./static",
 	}
 }
