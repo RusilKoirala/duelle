@@ -18,6 +18,8 @@ func main() {
 
 	mux.Handle("/", handler.NewStaticHandler(cfg.StaticDir))
 
+	mux.Handle("/ws", handler.NewWSHandler())
+
 	// health check point
 	mux.HandleFunc("GET /health", handler.Health)
 
