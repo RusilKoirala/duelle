@@ -7,18 +7,20 @@ import (
 
 	"github.com/rusilkoirala/duelle/internal/config"
 	"github.com/rusilkoirala/duelle/internal/handler"
+	"github.com/rusilkoirala/duelle/internal/words"
 )
 
 func main() {
 	// get the Port for the server to run in
 	cfg := config.Load()
 
+	wordService := words.NewWordService()
 	// the basic server
 	mux := http.NewServeMux()
 
 	mux.Handle("/", handler.NewStaticHandler(cfg.StaticDir))
 
-	mux.Handle("/ws", handler.NewWSHandler())
+	mux.Handle("/ws", handler.NewWSHandler(wordService))
 
 	// health check point
 	mux.HandleFunc("GET /health", handler.Health)
