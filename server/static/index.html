@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duelle</title>
+</head>
+<body>
+    <div class="container">
+        <Header>
+            <h1>Duelle</h1>
+        </Header>
+
+        <main>
+            <div class="game-status">
+                <span id="room-code">Room :</span>
+                <span id="connection-status">Disconnected</span>
+            </div>
+
+            <div class="boards">
+                <div class="board-container">
+                    <h2>You</h2>
+                    <div id="your-board" class="board"></div>
+                </div>
+            </div>
+
+            <div class="board-container">
+                <h2>Opponent</h2>
+                <div id="opponent-board"
+                class="board">
+
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="guess-input"
+                maxlength="5"
+                placeholder="Enter word"
+                autocomplete="off"
+            />
+            <button id="submit-btn">Submit</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
