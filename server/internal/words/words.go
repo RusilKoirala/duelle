@@ -1,17 +1,12 @@
 package words
 
 import (
-	"encoding/json"
-	"io"
+	"bufio"
 	"log"
 	"math/rand"
-	"net/http"
+	"os"
 	"strings"
 	"time"
-)
-
-const (
-	WordAPIURL = "https://wordle-api.cyclic.app/words"
 )
 
 type WordService struct {
@@ -24,40 +19,33 @@ func NewWordService() *WordService {
 		validWords: make(map[string]bool),
 		wordList:   make([]string, 0),
 	}
-	ws.loadWordFromAPI()
+	ws.loadWordsFromFile()
 	return ws
 }
 
-func (ws *WordService) loadWordFromAPI() {
-	resp, err := http.Get(WordAPIURL)
+func (ws *WordService) loadWordsFromFile() {
+	log.Printf("📚 Loading words from local file")
+
+	file, err := os.Open("internal/words/wordlist.txt")
 	if err != nil {
-		log.Fatal("Failed to fetch word list from API: %v", err)
+		log.Fatalf("Failed to open word list: %v", err)
 	}
+	defer file.Close()
 
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		log.Fatal("API returned status: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Failed to read API response: %v", err)
-	}
-
-	var words []string
-
-	if err := json.Unmarshal(body, &words); err != nil {
-		log.Fatalf("Failed to parse word list: %v", err)
-	}
-
-	for _, word := range words {
-		word = strings.ToUpper(strings.Trim(word))
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		word := strings.ToUpper(strings.TrimSpace(scanner.Text()))
 		if len(word) == 5 {
 			ws.validWords[word] = true
 			ws.wordList = append(ws.wordList, word)
 		}
 	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Error reading word list: %v", err)
+	}
+
+	log.Printf("✅ Loaded %d words", len(ws.wordList))
 }
 
 // check if word existss in the list
