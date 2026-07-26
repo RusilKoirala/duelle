@@ -4,43 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Duelle</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <Header>
-            <h1>Duelle</h1>
-        </Header>
+    <div id="menu" class="menu">
+        <h1>DUELLE</h1>
+        <p>Multiplayer Wordle</p>
+        <div class="menu-buttons">
+            <button id="create-room-btn" class="menu-btn">Create Room</button>
+            <button id="join-room-btn" class="menu-btn">Join</button>
+        </div>
+   
+    </div>
 
-        <main>
-            <div class="game-status">
-                <span id="room-code">Room :</span>
-                <span id="connection-status">Disconnected</span>
-            </div>
+    <div id="game" class="container hidden">
+        <header>
+            <h1>DUELLE</h1>
+        </header>
+        <div class="game-info">
+            <span id="opponent-info">Opponent: 0/6</span>
+            <span id="room-code">Room: </span>
+            <span id="timer">0:00</span>
+        </div>
 
-            <div class="boards">
-                <div class="board-container">
-                    <h2>You</h2>
-                    <div id="your-board" class="board"></div>
-                </div>
-            </div>
-
-            <div class="board-container">
-                <h2>Opponent</h2>
-                <div id="opponent-board"
-                class="board">
-
-                </div>
-            </div>
-
-            <div class="input-area">
-                <input type="text" id="guess-input"
-                maxlength="5"
-                placeholder="Enter word"
-                autocomplete="off"
-            />
-            <button id="submit-btn">Submit</button>
-            </div>
-        </main>
+        <div id="board" class="board"></div>
+        <div id="message" class="message"></div>
     </div>
 
     <script src="app.js"></script>
