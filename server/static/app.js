@@ -10,9 +10,99 @@ class DuelleGame {
         this.gameActive = false;
         this.startTime = null;
         this.timerInterval = null;
+        this.keyboardState = {};
+        this.stats = this.loadStats();
+
+        this.sounds = {
+            keypress: this.createSound(200, 0.1, 'sine'),
+            invalid: this.createSound(100, 0.2, 'sawtooth'),
+            win: this.createSound(440, 0.3, 'sine')
+        };
 
         this.checkURLRoom();
         this.setupMenu();
+        this.setupStatsModal();
+    }
+
+    createSound(frequency, duration, type) {
+        return () => {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        };
+    }
+
+    loadStats() {
+        const saved = localStorage.getItem('duelle_stats');
+        return saved ? JSON.parse(saved) : {
+            gamesPlayed: 0,
+            gamesWon: 0,
+            currentStreak: 0,
+            totalGuesses: 0
+        };
+    }
+
+    saveStats() {
+        localStorage.setItem('duelle_stats', JSON.stringify(this.stats));
+    }
+
+    updateStats(won, guesses) {
+        this.stats.gamesPlayed++;
+        if (won) {
+            this.stats.gamesWon++;
+            this.stats.currentStreak++;
+            this.stats.totalGuesses += guesses;
+        } else {
+            this.stats.currentStreak = 0;
+        }
+        this.saveStats();
+    }
+
+    setupStatsModal() {
+        const statsBtn = document.getElementById('stats-btn');
+        const modal = document.getElementById('stats-modal');
+        const closeBtn = modal.querySelector('.close');
+
+        statsBtn.addEventListener('click', () => {
+            this.showStats();
+        });
+
+        closeBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+    }
+
+    showStats() {
+        const winPercent = this.stats.gamesPlayed > 0 
+            ? Math.round((this.stats.gamesWon / this.stats.gamesPlayed) * 100) 
+            : 0;
+        const avgGuesses = this.stats.gamesWon > 0
+            ? (this.stats.totalGuesses / this.stats.gamesWon).toFixed(1)
+            : 0;
+
+        document.getElementById('games-played').textContent = this.stats.gamesPlayed;
+        document.getElementById('win-percent').textContent = winPercent;
+        document.getElementById('current-streak').textContent = this.stats.currentStreak;
+        document.getElementById('avg-guesses').textContent = avgGuesses;
+
+        document.getElementById('stats-modal').classList.remove('hidden');
     }
 
     checkURLRoom() {
@@ -65,6 +155,7 @@ class DuelleGame {
         document.getElementById('game').classList.remove('hidden');
         
         this.initUI();
+        this.initKeyboard();
         this.connectWebSocket();
         this.setupKeyboard();
         this.updateURL();
@@ -97,6 +188,35 @@ class DuelleGame {
 
         document.getElementById('room-code').textContent = `Room: ${this.roomId}`;
         this.updateOpponentInfo();
+    }
+
+    initKeyboard() {
+        const keys = document.querySelectorAll('.key');
+        keys.forEach(key => {
+            key.addEventListener('click', () => {
+                const keyValue = key.dataset.key;
+                if (keyValue === 'Enter') {
+                    this.submitGuess();
+                } else if (keyValue === 'Backspace') {
+                    this.deleteLetter();
+                } else {
+                    this.addLetter(keyValue);
+                }
+            });
+        });
+    }
+
+    updateKeyboard(letter, status) {
+        const key = document.querySelector(`[data-key="${letter}"]`);
+        if (!key) return;
+
+        const currentStatus = this.keyboardState[letter];
+        if (currentStatus === 'correct') return;
+        if (currentStatus === 'present' && status === 'absent') return;
+
+        this.keyboardState[letter] = status;
+        key.classList.remove('correct', 'present', 'absent');
+        key.classList.add(status);
     }
 
     startTimer() {
@@ -146,10 +266,10 @@ class DuelleGame {
     }
 
     handleServerMessage(msg) {
-        console.log('Server message:', msg);
-
         if (msg.type === 'error') {
             this.showMessage(msg.message, 'error');
+            this.shakeRow();
+            this.sounds.invalid();
             this.currentGuess = '';
             this.currentCol = 0;
             this.updateCurrentRow();
@@ -189,13 +309,35 @@ class DuelleGame {
         this.gameActive = false;
         this.stopTimer();
 
-        if (msg.winner === 'you') {
+        const won = msg.winner === 'you';
+        this.updateStats(won, this.currentRow + 1);
+
+        if (won) {
             this.showMessage('You won!', 'success');
+            this.sounds.win();
+            this.celebrateWin();
         } else if (msg.winner === 'opponent') {
             this.showMessage('Opponent won!', 'error');
         } else {
             this.showMessage('Game over', 'error');
         }
+    }
+
+    celebrateWin() {
+        for (let i = 0; i < 5; i++) {
+            const tile = document.querySelector(`[data-row="${this.currentRow - 1}"][data-col="${i}"]`);
+            setTimeout(() => {
+                tile.classList.add('bounce');
+            }, i * 100);
+        }
+    }
+
+    shakeRow() {
+        const row = document.querySelectorAll(`[data-row="${this.currentRow}"]`);
+        row.forEach(tile => {
+            tile.classList.add('shake');
+            setTimeout(() => tile.classList.remove('shake'), 500);
+        });
     }
 
     updateOpponentInfo() {
@@ -223,6 +365,7 @@ class DuelleGame {
             this.currentGuess += letter;
             this.updateCurrentRow();
             this.currentCol++;
+            this.sounds.keypress();
         }
     }
 
@@ -231,6 +374,7 @@ class DuelleGame {
             this.currentGuess = this.currentGuess.slice(0, -1);
             this.currentCol--;
             this.updateCurrentRow();
+            this.sounds.keypress();
         }
     }
 
@@ -250,6 +394,8 @@ class DuelleGame {
     submitGuess() {
         if (this.currentGuess.length !== 5) {
             this.showMessage('Not enough letters', 'error');
+            this.shakeRow();
+            this.sounds.invalid();
             return;
         }
 
@@ -272,7 +418,11 @@ class DuelleGame {
             const tile = document.querySelector(`[data-row="${this.currentRow}"][data-col="${i}"]`);
             
             setTimeout(() => {
-                tile.classList.add(results[i]);
+                tile.classList.add('flip');
+                setTimeout(() => {
+                    tile.classList.add(results[i]);
+                    this.updateKeyboard(guess[i], results[i]);
+                }, 250);
             }, 150 * i);
         }
 
