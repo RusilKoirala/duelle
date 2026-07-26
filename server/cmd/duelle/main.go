@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/rusilkoirala/duelle/internal/config"
+	"github.com/rusilkoirala/duelle/internal/game"
 	"github.com/rusilkoirala/duelle/internal/handler"
 	"github.com/rusilkoirala/duelle/internal/words"
 )
@@ -15,12 +16,13 @@ func main() {
 	cfg := config.Load()
 
 	wordService := words.NewWordService()
+	manager := game.NewManager()
 	// the basic server
 	mux := http.NewServeMux()
 
 	mux.Handle("/", handler.NewStaticHandler(cfg.StaticDir))
 
-	mux.Handle("/ws", handler.NewWSHandler(wordService))
+	mux.Handle("/ws", handler.NewWSHandler(wordService, manager))
 
 	// health check point
 	mux.HandleFunc("GET /health", handler.Health)

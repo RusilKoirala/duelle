@@ -170,5 +170,27 @@ func (h *WSHandler) sendRoomState(ctx context.Context, conn *websocket.Conn, roo
 		RoomState:   string(room.State),
 		PlayerCount: len(room.Players),
 	}
+	data, _ := json.Marshal(msg)
+	conn.Write(ctx, websocket.MessageText, data)
+}
 
+func generatePlayerID() string {
+	return "P" + time.Now().Format("150405")
+}
+func allCorrect(results []game.LetterStatus) bool {
+	for _, r := range results {
+		if r != game.Correct {
+			return false
+		}
+	}
+	return true
+}
+
+func (h *WSHandler) sendError(ctx context.Context, conn *websocket.Conn, message string) {
+	msg := ServerMessage{
+		Type:    "error",
+		Message: message,
+	}
+	data, _ := json.Marshal(msg)
+	conn.Write(ctx, websocket.MessageText, data)
 }
