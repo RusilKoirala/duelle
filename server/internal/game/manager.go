@@ -10,6 +10,7 @@ type Manager struct {
 	mu    sync.RWMutex
 }
 
+// create new manager
 func NewManager() *Manager {
 	return &Manager{
 		rooms: make(map[string]*Room),

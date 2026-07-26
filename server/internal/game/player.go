@@ -6,6 +6,7 @@ import (
 	"nhooyr.io/websocket"
 )
 
+// player struct
 type Player struct {
 	ID      string
 	Conn    *websocket.Conn
@@ -13,6 +14,7 @@ type Player struct {
 	Won     bool
 }
 
+// create new player
 func NewPlayer(id string, conn *websocket.Conn) *Player {
 	return &Player{
 		ID:      id,
@@ -22,6 +24,7 @@ func NewPlayer(id string, conn *websocket.Conn) *Player {
 	}
 }
 
+// send player data
 func (p *Player) Send(ctx context.Context, data []byte) error {
 	return p.Conn.Write(ctx, websocket.MessageText, data)
 }
