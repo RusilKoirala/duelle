@@ -37,6 +37,7 @@ type ServerMessage struct {
 	OpponentGuesses int                 `json:"opponent_guesses,omitempty"`
 	RoomState       string              `json:"room_state,omitempty"`
 	PlayerCount     int                 `json:"player_count,omitempty"`
+	Winner          string              `json:"winner,omitempty"`
 }
 
 func (h *WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +57,7 @@ func (h *WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	playerID := generatePlayerID()
+	log.Printf("Player connected: %s | Room: %s", playerID, roomID)
 
 	room := h.manager.GetOrCreateRoom(roomID, h.wordService.GetRandomWord())
 	player := game.NewPlayer(playerID, conn)
@@ -66,11 +68,14 @@ func (h *WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.sendRoomState(context.Background(), conn, room)
-
 	ctx := context.Background()
 
-	// connection alivee
+	h.sendRoomState(ctx, conn, room)
+
+	if room.State == game.Playing {
+		h.broadcastRoomState(ctx, room)
+	}
+
 	go func() {
 		for {
 			time.Sleep(30 * time.Second)
@@ -83,6 +88,7 @@ func (h *WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.handleMessages(ctx, room, player)
 
 	room.RemovePlayer(playerID)
+	log.Printf("Player disconnected: %s", playerID)
 	conn.Close(websocket.StatusNormalClosure, "Goodbye")
 }
 
@@ -90,21 +96,17 @@ func (h *WSHandler) handleMessages(ctx context.Context, room *game.Room, player 
 	for {
 		_, data, err := player.Conn.Read(ctx)
 		if err != nil {
-			log.Printf("Player %s disconnected", player.ID)
 			break
 		}
 
 		var msg ClientMessage
-
 		if err := json.Unmarshal(data, &msg); err != nil {
-			log.Printf("Invalid message: %v", err)
 			continue
 		}
 
 		if msg.Type == "guess" {
 			h.handleGuess(ctx, room, player, msg.Word)
 		}
-
 	}
 }
 
@@ -118,9 +120,7 @@ func (h *WSHandler) handleGuess(ctx context.Context, room *game.Room, player *ga
 	player.Guesses = append(player.Guesses, word)
 
 	opponent := room.GetOpponent(player.ID)
-
 	opponentGuesses := 0
-
 	if opponent != nil {
 		opponentGuesses = len(opponent.Guesses)
 	}
@@ -135,32 +135,31 @@ func (h *WSHandler) handleGuess(ctx context.Context, room *game.Room, player *ga
 	responseData, _ := json.Marshal(response)
 	player.Send(ctx, responseData)
 
-	if allCorrect(result.Results) {
+	won := allCorrect(result.Results)
+	lost := len(player.Guesses) >= 6 && !won
+
+	if won {
 		player.Won = true
 		room.State = game.Finished
+		h.sendGameOver(ctx, player.Conn, "you")
+		if opponent != nil {
+			h.sendGameOver(ctx, opponent.Conn, "opponent")
+		}
+	} else if lost {
+		room.State = game.Finished
+		h.sendGameOver(ctx, player.Conn, "lost")
+		if opponent != nil && !opponent.Won {
+			h.sendGameOver(ctx, opponent.Conn, "opponent")
+		}
 	}
 
-	if opponent != nil {
+	if opponent != nil && !won && !lost {
 		opponentMsg := ServerMessage{
 			Type:            "opponent_guessed",
 			OpponentGuesses: len(player.Guesses),
 		}
-
 		opponentData, _ := json.Marshal(opponentMsg)
 		opponent.Send(ctx, opponentData)
-	}
-
-}
-
-func (h *WSHandler) sendMessage(ctx context.Context, conn *websocket.Conn, msg ServerMessage) {
-	data, err := json.Marshal(msg)
-	if err != nil {
-		log.Printf("Marshal error: %v", err)
-		return
-	}
-
-	if err := conn.Write(ctx, websocket.MessageText, data); err != nil {
-		log.Printf("Write error: %v", err)
 	}
 }
 
@@ -174,16 +173,26 @@ func (h *WSHandler) sendRoomState(ctx context.Context, conn *websocket.Conn, roo
 	conn.Write(ctx, websocket.MessageText, data)
 }
 
-func generatePlayerID() string {
-	return "P" + time.Now().Format("150405")
-}
-func allCorrect(results []game.LetterStatus) bool {
-	for _, r := range results {
-		if r != game.Correct {
-			return false
-		}
+func (h *WSHandler) broadcastRoomState(ctx context.Context, room *game.Room) {
+	msg := ServerMessage{
+		Type:        "room_state",
+		RoomState:   string(room.State),
+		PlayerCount: len(room.Players),
 	}
-	return true
+	data, _ := json.Marshal(msg)
+
+	for _, player := range room.Players {
+		player.Send(ctx, data)
+	}
+}
+
+func (h *WSHandler) sendGameOver(ctx context.Context, conn *websocket.Conn, winner string) {
+	msg := ServerMessage{
+		Type:   "game_over",
+		Winner: winner,
+	}
+	data, _ := json.Marshal(msg)
+	conn.Write(ctx, websocket.MessageText, data)
 }
 
 func (h *WSHandler) sendError(ctx context.Context, conn *websocket.Conn, message string) {
@@ -193,4 +202,17 @@ func (h *WSHandler) sendError(ctx context.Context, conn *websocket.Conn, message
 	}
 	data, _ := json.Marshal(msg)
 	conn.Write(ctx, websocket.MessageText, data)
+}
+
+func generatePlayerID() string {
+	return "P" + time.Now().Format("150405")
+}
+
+func allCorrect(results []game.LetterStatus) bool {
+	for _, r := range results {
+		if r != game.Correct {
+			return false
+		}
+	}
+	return true
 }

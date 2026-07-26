@@ -12,22 +12,27 @@
         <p>Multiplayer Wordle</p>
         <div class="menu-buttons">
             <button id="create-room-btn" class="menu-btn">Create Room</button>
-            <button id="join-room-btn" class="menu-btn">Join</button>
+            <button id="join-room-btn" class="menu-btn">Join Room</button>
         </div>
-   
+        <div id="join-input-container" class="join-input-container hidden">
+            <input type="text" id="room-code-input" placeholder="Enter room code" maxlength="6">
+            <button id="join-submit-btn" class="menu-btn">Join</button>
+        </div>
     </div>
 
     <div id="game" class="container hidden">
         <header>
             <h1>DUELLE</h1>
         </header>
+
         <div class="game-info">
             <span id="opponent-info">Opponent: 0/6</span>
-            <span id="room-code">Room: </span>
+            <span id="room-code">Room: -</span>
             <span id="timer">0:00</span>
         </div>
 
         <div id="board" class="board"></div>
+
         <div id="message" class="message"></div>
     </div>
 

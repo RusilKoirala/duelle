@@ -67,8 +67,8 @@ func (r *Room) RemovePlayer(playerID string) {
 
 // get opponenttt
 func (r *Room) GetOpponent(playerID string) *Player {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	for _, p := range r.Players {
 		if p.ID != playerID {
@@ -80,7 +80,7 @@ func (r *Room) GetOpponent(playerID string) *Player {
 
 // check if its full
 func (r *Room) IsFull() bool {
-	r.mu.Lock()
+	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return len(r.Players) >= 2
 }
