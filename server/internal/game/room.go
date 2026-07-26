@@ -67,7 +67,7 @@ func (r *Room) RemovePlayer(playerID string) {
 
 // get opponenttt
 func (r *Room) GetOpponent(playerID string) *Player {
-	r.mu.RUnlock()
+	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	for _, p := range r.Players {

@@ -34,6 +34,13 @@ func CheckGuess(secret, guess string) GuessResult {
 	used := make([]bool, 5)
 
 	for i := 0; i < 5; i++ {
+		if guessLetters[i] == secretLetters[i] {
+			results[i] = Correct
+			used[i] = true
+		}
+	}
+
+	for i := 0; i < 5; i++ {
 		if results[i] == Correct {
 			continue
 		}
