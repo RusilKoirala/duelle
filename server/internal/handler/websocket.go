@@ -17,6 +17,7 @@ type WSHandler struct {
 	manager     *game.Manager
 }
 
+// creating ws handler
 func NewWSHandler(wordService *words.WordService, manager *game.Manager) *WSHandler {
 	return &WSHandler{
 		wordService: wordService,
@@ -24,11 +25,13 @@ func NewWSHandler(wordService *words.WordService, manager *game.Manager) *WSHand
 	}
 }
 
+// client message struct
 type ClientMessage struct {
 	Type string `json:"type"`
 	Word string `json:"word"`
 }
 
+// the server message struct
 type ServerMessage struct {
 	Type            string              `json:"type"`
 	Valid           bool                `json:"valid,omitempty"`
@@ -40,6 +43,7 @@ type ServerMessage struct {
 	Winner          string              `json:"winner,omitempty"`
 }
 
+// main handler
 func (h *WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	roomID := r.URL.Query().Get("room")
 	if roomID == "" {
@@ -70,10 +74,10 @@ func (h *WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	h.sendRoomState(ctx, conn, room)
-
 	if room.State == game.Playing {
 		h.broadcastRoomState(ctx, room)
+	} else {
+		h.sendRoomState(ctx, conn, room)
 	}
 
 	go func() {
@@ -92,6 +96,7 @@ func (h *WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	conn.Close(websocket.StatusNormalClosure, "Goodbye")
 }
 
+// handler for messages
 func (h *WSHandler) handleMessages(ctx context.Context, room *game.Room, player *game.Player) {
 	for {
 		_, data, err := player.Conn.Read(ctx)
@@ -110,6 +115,7 @@ func (h *WSHandler) handleMessages(ctx context.Context, room *game.Room, player 
 	}
 }
 
+// guess handlerr
 func (h *WSHandler) handleGuess(ctx context.Context, room *game.Room, player *game.Player, word string) {
 	if !h.wordService.IsValid(word) {
 		h.sendError(ctx, player.Conn, "Not a valid word")
@@ -163,6 +169,7 @@ func (h *WSHandler) handleGuess(ctx context.Context, room *game.Room, player *ga
 	}
 }
 
+// send the room statte
 func (h *WSHandler) sendRoomState(ctx context.Context, conn *websocket.Conn, room *game.Room) {
 	msg := ServerMessage{
 		Type:        "room_state",
@@ -186,6 +193,7 @@ func (h *WSHandler) broadcastRoomState(ctx context.Context, room *game.Room) {
 	}
 }
 
+// send message game over
 func (h *WSHandler) sendGameOver(ctx context.Context, conn *websocket.Conn, winner string) {
 	msg := ServerMessage{
 		Type:   "game_over",
@@ -195,6 +203,7 @@ func (h *WSHandler) sendGameOver(ctx context.Context, conn *websocket.Conn, winn
 	conn.Write(ctx, websocket.MessageText, data)
 }
 
+// send error for problems
 func (h *WSHandler) sendError(ctx context.Context, conn *websocket.Conn, message string) {
 	msg := ServerMessage{
 		Type:    "error",
@@ -204,10 +213,12 @@ func (h *WSHandler) sendError(ctx context.Context, conn *websocket.Conn, message
 	conn.Write(ctx, websocket.MessageText, data)
 }
 
+// generate random player id
 func generatePlayerID() string {
 	return "P" + time.Now().Format("150405")
 }
 
+// check if all correct word
 func allCorrect(results []game.LetterStatus) bool {
 	for _, r := range results {
 		if r != game.Correct {

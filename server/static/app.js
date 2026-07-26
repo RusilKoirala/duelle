@@ -29,15 +29,15 @@ class DuelleGame {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
+
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
+
             oscillator.frequency.value = frequency;
             oscillator.type = type;
             gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-            
+
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + duration);
         };
@@ -90,8 +90,8 @@ class DuelleGame {
     }
 
     showStats() {
-        const winPercent = this.stats.gamesPlayed > 0 
-            ? Math.round((this.stats.gamesWon / this.stats.gamesPlayed) * 100) 
+        const winPercent = this.stats.gamesPlayed > 0
+            ? Math.round((this.stats.gamesWon / this.stats.gamesPlayed) * 100)
             : 0;
         const avgGuesses = this.stats.gamesWon > 0
             ? (this.stats.totalGuesses / this.stats.gamesWon).toFixed(1)
@@ -153,7 +153,7 @@ class DuelleGame {
     startGame() {
         document.getElementById('menu').classList.add('hidden');
         document.getElementById('game').classList.remove('hidden');
-        
+
         this.initUI();
         this.initKeyboard();
         this.connectWebSocket();
@@ -228,7 +228,7 @@ class DuelleGame {
             const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
             const minutes = Math.floor(elapsed / 60);
             const seconds = elapsed % 60;
-            document.getElementById('timer').textContent = 
+            document.getElementById('timer').textContent =
                 `${minutes}:${seconds.toString().padStart(2, '0')}`;
         }, 1000);
     }
@@ -277,7 +277,10 @@ class DuelleGame {
         }
 
         if (msg.type === 'room_state') {
-            if (msg.room_state === 'playing') {
+            if (msg.room_state === 'waiting') {
+                this.showMessage('Waiting for opponent...', '');
+                this.gameActive = false;
+            } else if (msg.room_state === 'playing') {
                 this.showMessage('Game started!', 'success');
                 this.gameActive = true;
                 this.startTimer();
@@ -341,7 +344,7 @@ class DuelleGame {
     }
 
     updateOpponentInfo() {
-        document.getElementById('opponent-info').textContent = 
+        document.getElementById('opponent-info').textContent =
             `Opponent: ${this.opponentGuesses}/6`;
     }
 
@@ -416,7 +419,7 @@ class DuelleGame {
     displayGuess(guess, results) {
         for (let i = 0; i < 5; i++) {
             const tile = document.querySelector(`[data-row="${this.currentRow}"][data-col="${i}"]`);
-            
+
             setTimeout(() => {
                 tile.classList.add('flip');
                 setTimeout(() => {
