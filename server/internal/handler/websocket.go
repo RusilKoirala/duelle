@@ -75,6 +75,7 @@ func (h *WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	if room.State == game.Playing {
+		log.Printf("Game started in room %s | Word: %s", roomID, room.SecretWord)
 		h.broadcastRoomState(ctx, room)
 	} else {
 		h.sendRoomState(ctx, conn, room)

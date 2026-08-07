@@ -111,6 +111,8 @@ class DuelleGame {
         if (roomFromURL && roomFromURL.length === 6) {
             this.roomId = roomFromURL.toUpperCase();
             this.startGame();
+        } else {
+            window.history.replaceState({}, '', window.location.pathname);
         }
     }
 
@@ -316,14 +318,53 @@ class DuelleGame {
         this.updateStats(won, this.currentRow + 1);
 
         if (won) {
-            this.showMessage('You won!', 'success');
+            this.showMessage('You won!', "sucess");
             this.sounds.win();
-            this.celebrateWin();
+            setTimeout(() => {
+                this.showGameOverModal(true);
+            }, 1500);
         } else if (msg.winner === 'opponent') {
-            this.showMessage('Opponent won!', 'error');
+           setTimeout(() => {
+            this.showGameOverModal(false)
+           }, 1000);
         } else {
-            this.showMessage('Game over', 'error');
+            this.showGameOverModal(false)
         }
+    }
+
+    showGameOverModal(won) {
+        const modal = document.getElementById('game-over-modal')
+        const content = modal.querySelector('.game-over-content');
+        const icon = document.getElementById('game-over-icon');
+        const title = document.getElementById('game-over-title');
+        const message = document.getElementById('game-over-message');
+
+
+        if (won) {
+            content.classList.remove('lost');
+            icon.textContent = '🎊'
+            title.textContent = "You won!"
+            message.textContent ="Congratulations!";
+        } else {
+            content.classList.add('lost');
+            icon.textContent = "😭"
+            title.textContent = "You lost!";
+            message.textContent = "Better luck next time";
+        }
+
+        modal.classList.remove('hidden');
+
+        document.getElementById('restart-btn').onclick = ()=> {
+            modal.classList.add('hidden');
+            window.history.replaceState({}, '', window.location.pathname);
+            window.location.reload();
+        };
+
+        document.getElementById('menu-btn').onclick = () => {
+            modal.classList.add('hidden');
+            window.history.replaceState({}, '', window.location.pathname);
+            window.location.reload();
+        };
     }
 
     celebrateWin() {

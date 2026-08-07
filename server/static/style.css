@@ -373,3 +373,59 @@ header h1 {
         min-width: 50px;
     }
 }
+
+.game-over-content {
+    background: #121213;
+    border: 2px solid #538d4e;
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+}
+
+.game-over-content.lost {
+    border-color:  #f44336;
+}
+
+#game-over-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+
+}
+
+#game-over-message {
+    font-size: 16px;
+    color: #818384;
+    margin-bottom: 30px;
+}
+
+.game-over-buttons {
+    display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.game-over-btn {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    background: #538d4e;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.game-over-btn:hover {
+    background: #6aaa54;
+}
+
+.game-over-btn.secondary {
+    background: #818384;
+}
+
+.game-over-btn.secondary:hover {
+    background: #9a9b9c;
+}
