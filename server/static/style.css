@@ -429,3 +429,30 @@ header h1 {
 .game-over-btn.secondary:hover {
     background: #9a9b9c;
 }
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.leave-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+    background: transparent;
+    color: #818384;
+    border: 1px solid #3a3a3c;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.leave-btn:hover {
+    color: #f44336;
+    border-color: #f44336;
+}
+
+.game-over-content.draw {
+    border-color: #b59f3b;
+}

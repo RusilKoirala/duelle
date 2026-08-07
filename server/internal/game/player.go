@@ -8,10 +8,11 @@ import (
 
 // player struct
 type Player struct {
-	ID      string
-	Conn    *websocket.Conn
-	Guesses []string
-	Won     bool
+	ID       string
+	Conn     *websocket.Conn
+	Guesses  []string
+	Won      bool
+	Finished bool
 }
 
 // create new player

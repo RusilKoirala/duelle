@@ -41,6 +41,7 @@ type ServerMessage struct {
 	RoomState       string              `json:"room_state,omitempty"`
 	PlayerCount     int                 `json:"player_count,omitempty"`
 	Winner          string              `json:"winner,omitempty"`
+	
 }
 
 // main handler
@@ -112,9 +113,23 @@ func (h *WSHandler) handleMessages(ctx context.Context, room *game.Room, player 
 
 		if msg.Type == "guess" {
 			h.handleGuess(ctx, room, player, msg.Word)
-		}
+		} else if msg.Type == "forfeit" {
+			h.handleForfeit(ctx, room, player)
+			return
 	}
 }
+
+
+
+// handle forfeitt
+func (h *WSHandler) handleForfeit(ctx context.Context, room *game.Room, player *game.Player) {
+	room.State = game.Finished
+	h.sendGameOver(ctx, player.Conn, "you")
+	if opponent := room.GetOpponent(player.ID); opponent != nil {
+		h.sendGameOver(ctx, opponent.Conn, "opponent")
+	}
+}
+
 
 // guess handlerr
 func (h *WSHandler) handleGuess(ctx context.Context, room *game.Room, player *game.Player, word string) {
@@ -143,31 +158,50 @@ func (h *WSHandler) handleGuess(ctx context.Context, room *game.Room, player *ga
 	player.Send(ctx, responseData)
 
 	won := allCorrect(result.Results)
-	lost := len(player.Guesses) >= 6 && !won
+
+	won := allCorrect(result.Results)
 
 	if won {
-		player.Won = true
-		room.State = game.Finished
-		h.sendGameOver(ctx, player.Conn, "you")
-		if opponent != nil {
-			h.sendGameOver(ctx, opponent.Conn, "opponent")
-		}
-	} else if lost {
-		room.State = game.Finished
-		h.sendGameOver(ctx, player.Conn, "lost")
-		if opponent != nil && !opponent.Won {
-			h.sendGameOver(ctx, opponent.Conn, "opponent")
-		}
-	}
+    	player.Won = true
+    	player.Finished = true
+    	room.State = game.Finished
+     	h.sendGameOver(ctx, player.Conn, "you")
+    	if opponent != nil {
+        	h.sendGameOver(ctx, opponent.Conn, "opponent")
+     	}
+    return
+}
 
-	if opponent != nil && !won && !lost {
-		opponentMsg := ServerMessage{
-			Type:            "opponent_guessed",
-			OpponentGuesses: len(player.Guesses),
-		}
-		opponentData, _ := json.Marshal(opponentMsg)
-		opponent.Send(ctx, opponentData)
-	}
+// not a win 
+if len(player.Guesses) >= 6 {
+    player.Finished = true
+}
+
+// notify opponent (if game still going)
+if opponent != nil && !player.Finished {
+    opponentMsg := ServerMessage{
+        Type:            "opponent_guessed",
+        OpponentGuesses: len(player.Guesses)ss,
+    }
+    opponentData, _ := json.Marshal(opponentMsg)
+    opponent.Send(ctx, opponentData)
+}
+
+// check if both finished without a winner → draw
+	if player.Finished {
+    	opponentFinished := opponent != nil && opponent.Finished && !opponent.Won
+    	if opponentFinished {
+        	room.State = game.Finished
+        	h.sendGameOver(ctx, player.Conn, "draw")
+        	h.sendGameOver(ctx, opponent.Conn, "draw")
+    } else if opponent != nil {
+        notifyMsg := ServerMessage{
+            Type:    "opponent_lost",
+            Message: "Opponent ran out of guesses",
+        }
+        notifyData, _ := json.Marshal(notifyMsg)
+        opponent.Send(ctx, notifyData)
+    }
 }
 
 // send the room statte
