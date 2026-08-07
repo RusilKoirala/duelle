@@ -22,6 +22,7 @@ class DuelleGame {
         this.checkURLRoom();
         this.setupMenu();
         this.setupStatsModal();
+        this.setupLeaveButton();
     }
 
     createSound(frequency, duration, type) {
@@ -304,6 +305,11 @@ class DuelleGame {
             return;
         }
 
+        if (msg.type === 'opponent_lost') {
+            this.showMessage(msg.message, 'error');
+            return;
+        }
+
         if (msg.type === 'game_over') {
             this.handleGameOver(msg);
             return;
@@ -315,46 +321,53 @@ class DuelleGame {
         this.stopTimer();
 
         const won = msg.winner === 'you';
-        this.updateStats(won, this.currentRow + 1);
+        const draw = msg.winner === 'draw';
 
-        if (won) {
-            this.showMessage('You won!', "sucess");
+        if (draw) {
+            this.updateStats(false, this.currentRow + 1);
+            this.showGameOverModal('draw');
+        } else if (won) {
+            this.updateStats(true, this.currentRow + 1);
+            this.showMessage('You won!', 'success');
             this.sounds.win();
-            setTimeout(() => {
-                this.showGameOverModal(true);
-            }, 1500);
+            setTimeout(() => this.showGameOverModal('won'), 1500);
         } else if (msg.winner === 'opponent') {
-           setTimeout(() => {
-            this.showGameOverModal(false)
-           }, 1000);
+            this.updateStats(false, this.currentRow + 1);
+            setTimeout(() => this.showGameOverModal('lost'), 1000);
         } else {
-            this.showGameOverModal(false)
+            this.updateStats(false, this.currentRow + 1);
+            this.showGameOverModal('lost');
         }
     }
 
-    showGameOverModal(won) {
-        const modal = document.getElementById('game-over-modal')
+    showGameOverModal(result) {
+        const modal = document.getElementById('game-over-modal');
         const content = modal.querySelector('.game-over-content');
         const icon = document.getElementById('game-over-icon');
         const title = document.getElementById('game-over-title');
         const message = document.getElementById('game-over-message');
 
+        content.classList.remove('lost', 'draw');
 
-        if (won) {
-            content.classList.remove('lost');
-            icon.textContent = '🎊'
-            title.textContent = "You won!"
-            message.textContent ="Congratulations!";
+        if (result === 'won') {
+            icon.textContent = '🎊';
+            title.textContent = 'You won!';
+            message.textContent = 'Congratulations!';
+        } else if (result === 'draw') {
+            content.classList.add('draw');
+            icon.textContent = '🤝';
+            title.textContent = "It's a draw!";
+            message.textContent = 'Neither player guessed the word';
         } else {
             content.classList.add('lost');
-            icon.textContent = "😭"
-            title.textContent = "You lost!";
-            message.textContent = "Better luck next time";
+            icon.textContent = '😭';
+            title.textContent = 'You lost!';
+            message.textContent = 'Better luck next time';
         }
 
         modal.classList.remove('hidden');
 
-        document.getElementById('restart-btn').onclick = ()=> {
+        document.getElementById('restart-btn').onclick = () => {
             modal.classList.add('hidden');
             window.history.replaceState({}, '', window.location.pathname);
             window.location.reload();
@@ -495,6 +508,35 @@ class DuelleGame {
         const messageEl = document.getElementById('message');
         messageEl.textContent = text;
         messageEl.className = `message ${type}`;
+    }
+
+    setupLeaveButton() {
+        document.getElementById('leave-btn').addEventListener('click', () => {
+            if (this.gameActive && confirm('Leave game? Opponent will win.')) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({ type: 'forfeit' }));
+                }
+            }
+            this.goToMenu();
+        });
+    }
+
+    goToMenu() {
+        this.gameActive = false;
+        this.stopTimer();
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+        this.currentRow = 0;
+        this.currentCol = 0;
+        this.currentGuess = '';
+        this.guesses = [];
+        this.opponentGuesses = 0;
+        this.keyboardState = {};
+        document.getElementById('game').classList.add('hidden');
+        document.getElementById('menu').classList.remove('hidden');
+        window.history.replaceState({}, '', window.location.pathname);
     }
 }
 
