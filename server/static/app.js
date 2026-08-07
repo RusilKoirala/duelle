@@ -350,17 +350,17 @@ class DuelleGame {
         content.classList.remove('lost', 'draw');
 
         if (result === 'won') {
-            icon.textContent = '🎊';
+            icon.textContent = 'WIN';
             title.textContent = 'You won!';
             message.textContent = 'Congratulations!';
         } else if (result === 'draw') {
             content.classList.add('draw');
-            icon.textContent = '🤝';
+            icon.textContent = 'DRAW';
             title.textContent = "It's a draw!";
             message.textContent = 'Neither player guessed the word';
         } else {
             content.classList.add('lost');
-            icon.textContent = '😭';
+            icon.textContent = 'LOSS';
             title.textContent = 'You lost!';
             message.textContent = 'Better luck next time';
         }

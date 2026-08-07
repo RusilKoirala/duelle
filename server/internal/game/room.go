@@ -23,7 +23,7 @@ type Room struct {
 	mu         sync.RWMutex
 }
 
-// create a roomm
+// create a room
 func NewRoom(id string, secretWord string) *Room {
 	return &Room{
 		ID:         id,
@@ -33,7 +33,7 @@ func NewRoom(id string, secretWord string) *Room {
 	}
 }
 
-// add someone
+// add player
 func (r *Room) AddPlayer(player *Player) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -49,7 +49,7 @@ func (r *Room) AddPlayer(player *Player) bool {
 	return true
 }
 
-// remove them
+// remove player
 func (r *Room) RemovePlayer(playerID string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -65,7 +65,7 @@ func (r *Room) RemovePlayer(playerID string) {
 	}
 }
 
-// get opponenttt
+// get opponent
 func (r *Room) GetOpponent(playerID string) *Player {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -78,14 +78,14 @@ func (r *Room) GetOpponent(playerID string) *Player {
 	return nil
 }
 
-// check if its full
+// check if room is full
 func (r *Room) IsFull() bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return len(r.Players) >= 2
 }
 
-// broadcast it
+// broadcast to all players
 func (r *Room) Broadcast(ctx context.Context, message interface{}) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

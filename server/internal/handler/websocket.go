@@ -41,7 +41,6 @@ type ServerMessage struct {
 	RoomState       string              `json:"room_state,omitempty"`
 	PlayerCount     int                 `json:"player_count,omitempty"`
 	Winner          string              `json:"winner,omitempty"`
-	
 }
 
 // main handler
@@ -62,7 +61,7 @@ func (h *WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	playerID := generatePlayerID()
-	log.Printf("Player connected: %s | Room: %s", playerID, roomID)
+	log.Printf("player connected: %s | Room: %s", playerID, roomID)
 
 	room := h.manager.GetOrCreateRoom(roomID, h.wordService.GetRandomWord())
 	player := game.NewPlayer(playerID, conn)
@@ -76,7 +75,7 @@ func (h *WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	if room.State == game.Playing {
-		log.Printf("Game started in room %s | Word: %s", roomID, room.SecretWord)
+		log.Printf("game started in room %s | Word: %s", roomID, room.SecretWord)
 		h.broadcastRoomState(ctx, room)
 	} else {
 		h.sendRoomState(ctx, conn, room)
@@ -94,7 +93,7 @@ func (h *WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.handleMessages(ctx, room, player)
 
 	room.RemovePlayer(playerID)
-	log.Printf("Player disconnected: %s", playerID)
+	log.Printf("player disconnected: %s", playerID)
 	conn.Close(websocket.StatusNormalClosure, "Goodbye")
 }
 
@@ -129,7 +128,7 @@ func (h *WSHandler) handleForfeit(ctx context.Context, room *game.Room, player *
 	}
 }
 
-// guess handlerr
+// guess handler
 func (h *WSHandler) handleGuess(ctx context.Context, room *game.Room, player *game.Player, word string) {
 	if !h.wordService.IsValid(word) {
 		h.sendError(ctx, player.Conn, "Not a valid word")
@@ -168,12 +167,12 @@ func (h *WSHandler) handleGuess(ctx context.Context, room *game.Room, player *ga
 		return
 	}
 
-	// check if player exhausted all guesses
+	// check if player ran out of guesses
 	if len(player.Guesses) >= 6 {
 		player.Finished = true
 	}
 
-	// notify opponent of this guess (if game still going)
+	// notify opponent (if game still going)
 	if opponent != nil && !player.Finished {
 		opponentMsg := ServerMessage{
 			Type:            "opponent_guessed",
@@ -183,7 +182,7 @@ func (h *WSHandler) handleGuess(ctx context.Context, room *game.Room, player *ga
 		opponent.Send(ctx, opponentData)
 	}
 
-	// check if both finished without a winner -> draw
+	// check if both finished with no winner = draw
 	if player.Finished {
 		opponentFinished := opponent != nil && opponent.Finished && !opponent.Won
 		if opponentFinished {
@@ -191,7 +190,7 @@ func (h *WSHandler) handleGuess(ctx context.Context, room *game.Room, player *ga
 			h.sendGameOver(ctx, player.Conn, "draw")
 			h.sendGameOver(ctx, opponent.Conn, "draw")
 		} else if opponent != nil {
-			// let opponent know this player ran out, game continues for them
+			// tell opponent this player ran out
 			notifyMsg := ServerMessage{
 				Type:    "opponent_lost",
 				Message: "Opponent ran out of guesses",
@@ -202,7 +201,7 @@ func (h *WSHandler) handleGuess(ctx context.Context, room *game.Room, player *ga
 	}
 }
 
-// send the room statte
+// send room state
 func (h *WSHandler) sendRoomState(ctx context.Context, conn *websocket.Conn, room *game.Room) {
 	msg := ServerMessage{
 		Type:        "room_state",
@@ -226,7 +225,7 @@ func (h *WSHandler) broadcastRoomState(ctx context.Context, room *game.Room) {
 	}
 }
 
-// send message game over
+// send game over message
 func (h *WSHandler) sendGameOver(ctx context.Context, conn *websocket.Conn, winner string) {
 	msg := ServerMessage{
 		Type:   "game_over",
@@ -236,7 +235,7 @@ func (h *WSHandler) sendGameOver(ctx context.Context, conn *websocket.Conn, winn
 	conn.Write(ctx, websocket.MessageText, data)
 }
 
-// send error for problems
+// send error message
 func (h *WSHandler) sendError(ctx context.Context, conn *websocket.Conn, message string) {
 	msg := ServerMessage{
 		Type:    "error",
@@ -246,12 +245,12 @@ func (h *WSHandler) sendError(ctx context.Context, conn *websocket.Conn, message
 	conn.Write(ctx, websocket.MessageText, data)
 }
 
-// generate random player id
+// generate player id
 func generatePlayerID() string {
 	return "P" + time.Now().Format("150405")
 }
 
-// check if all correct word
+// check if all letters are correct
 func allCorrect(results []game.LetterStatus) bool {
 	for _, r := range results {
 		if r != game.Correct {

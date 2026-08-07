@@ -15,7 +15,7 @@ type GuessResult struct {
 	Results []LetterStatus `json:"results"`
 }
 
-// compares a guess against the secret word
+// compare guess against the secret word
 func CheckGuess(secret, guess string) GuessResult {
 	if len(secret) != 5 || len(guess) != 5 {
 		return GuessResult{

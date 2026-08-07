@@ -15,7 +15,7 @@ type Player struct {
 	Finished bool
 }
 
-// create new player
+// new player
 func NewPlayer(id string, conn *websocket.Conn) *Player {
 	return &Player{
 		ID:      id,
@@ -25,7 +25,7 @@ func NewPlayer(id string, conn *websocket.Conn) *Player {
 	}
 }
 
-// send player data
+// send data to client
 func (p *Player) Send(ctx context.Context, data []byte) error {
 	return p.Conn.Write(ctx, websocket.MessageText, data)
 }
