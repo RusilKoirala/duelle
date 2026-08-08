@@ -24,7 +24,7 @@ func NewWordService() *WordService {
 }
 
 func (ws *WordService) loadWordsFromFile() {
-	log.Printf("📚 Loading words from local file")
+	log.Printf("Loading words from local file")
 
 	file, err := os.Open("internal/words/wordlist.txt")
 	if err != nil {
@@ -45,7 +45,7 @@ func (ws *WordService) loadWordsFromFile() {
 		log.Fatalf("Error reading word list: %v", err)
 	}
 
-	log.Printf("✅ Loaded %d words", len(ws.wordList))
+	log.Printf("Loaded %d words", len(ws.wordList))
 }
 
 // check if word existss in the list
