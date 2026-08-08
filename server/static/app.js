@@ -11,8 +11,11 @@ class DuelleGame {
         this.startTime = null;
         this.timerInterval = null;
         this.keyboardState = {};
+        this.soundEnabled = true;
         this.stats = this.loadStats();
 
+
+        // sounds
         this.sounds = {
             keypress: this.createSound(200, 0.1, 'sine'),
             invalid: this.createSound(100, 0.2, 'sawtooth'),
@@ -23,10 +26,14 @@ class DuelleGame {
         this.setupMenu();
         this.setupStatsModal();
         this.setupLeaveButton();
+        this.setupSoundToggle();
     }
 
     createSound(frequency, duration, type) {
         return () => {
+
+
+            if (!this.soundEnabled) return;
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
@@ -156,6 +163,10 @@ class DuelleGame {
     startGame() {
         document.getElementById('menu').classList.add('hidden');
         document.getElementById('game').classList.remove('hidden');
+        document.getElementById('game').classList.add('slide-up');
+        setTimeout(() => {
+            document.getElementById('game').classList.remove('slide-up');
+        }, 500);
 
         this.initUI();
         this.initKeyboard();
@@ -187,6 +198,8 @@ class DuelleGame {
             }
 
             board.appendChild(rowDiv);
+            rowDiv.classList.add('tile-pop');
+            rowDiv.style.animationDelay = `${row * 0.05}s`;
         }
 
         document.getElementById('room-code').textContent = `Room: ${this.roomId}`;
@@ -265,6 +278,8 @@ class DuelleGame {
             this.showMessage('Opponent disconnected', 'error');
             this.gameActive = false;
             this.stopTimer();
+
+
         };
     }
 
@@ -321,6 +336,7 @@ class DuelleGame {
         this.stopTimer();
 
         const won = msg.winner === 'you';
+
         const draw = msg.winner === 'draw';
 
         if (draw) {
@@ -330,6 +346,10 @@ class DuelleGame {
             this.updateStats(true, this.currentRow + 1);
             this.showMessage('You won!', 'success');
             this.sounds.win();
+            this.launchConfetti();
+            document.querySelectorAll('.tile.correct').forEach((tile, i) => {
+                setTimeout(() => tile.classList.add('glow'), i * 100);
+            });
             setTimeout(() => this.showGameOverModal('won'), 1500);
         } else if (msg.winner === 'opponent') {
             this.updateStats(false, this.currentRow + 1);
@@ -397,6 +417,8 @@ class DuelleGame {
         });
     }
 
+
+    
     updateOpponentInfo() {
         document.getElementById('opponent-info').textContent =
             `Opponent: ${this.opponentGuesses}/6`;
@@ -537,6 +559,77 @@ class DuelleGame {
         document.getElementById('game').classList.add('hidden');
         document.getElementById('menu').classList.remove('hidden');
         window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    setupSoundToggle() {
+        const btn = document.getElementById('sound-toggle-btn');
+        btn.addEventListener('click', () => {
+            this.soundEnabled = !this.soundEnabled;
+            if (this.soundEnabled) {
+                btn.textContent = 'Sound: ON';
+                btn.classList.remove('muted');
+            }
+            else {
+                btn.textContent = 'Sound: OFF';
+                btn.classList.add('muted');
+            }
+        });
+    }
+
+    launchConfetti() {
+        const canvas = document.createElement('canvas');
+        canvas.id = 'confetti-canvas';
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        document.body.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        const pieces = [];
+        const colors = ['#538d4e', '#b59f3b', '#f44336', '#6aaa64', '#d7dadc', '#818384'];
+
+        for (let i = 0; i < 120; i++) {
+            pieces.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                w: Math.random() * 8 + 4,
+                h: Math.random() * 4 + 2,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speed: Math.random() * 3 + 2,
+                angle: Math.random() * Math.PI * 2,
+                spin: (Math.random() - 0.5) * 0.2,
+                drift: (Math.random() - 0.5) * 2,
+            });
+        }
+
+        let frame = 0;
+        const maxFrames = 180;
+
+        const animate = () => {
+            if (frame >= maxFrames) {
+                canvas.remove();
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            pieces.forEach(p => {
+                p.y += p.speed;
+                p.x += p.drift;
+                p.angle += p.spin;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.angle);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = 1 - (frame / maxFrames);
+                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                ctx.restore();
+            });
+
+            frame++;
+            requestAnimationFrame(animate);
+        };
+        animate();
     }
 }
 

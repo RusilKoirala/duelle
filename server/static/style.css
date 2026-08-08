@@ -525,7 +525,7 @@ header h1 {
         box-shadow: 0 0 5px #538d4e;
     }
     50% {
-        box-shadow: 0 0 25px, 0 0 50px #538d4e;
+        box-shadow: 0 0 25px #538d4e, 0 0 50px #538d4e;
     }
 }
 
